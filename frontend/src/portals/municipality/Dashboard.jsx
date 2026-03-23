@@ -42,7 +42,7 @@ function StatCard({ icon, label, value, sub, accent, delay = 0 }) {
       style={{ borderTop: `2px solid ${c.border}` }}
     >
       <div className="stat-icon" style={{ background: c.bg }}>
-        <span>{icon}</span>
+        <span className="flex items-center justify-center" style={{ color: c.text }}>{icon}</span>
       </div>
       <div className="stat-value" style={{ color: c.text }}>{value ?? '—'}</div>
       <div className="stat-label">{label}</div>
@@ -73,6 +73,7 @@ export default function MunicipalityDashboard() {
   const [chainStats,  setChainStats]  = useState(null)
   const [now,         setNow]         = useState(new Date())
   const [loading,     setLoading]     = useState(true)
+  const [loadError,   setLoadError]   = useState(false)
   const [wsStatus,    setWsStatus]    = useState('connecting') // connecting | live | offline
 
   // Live clock
@@ -88,7 +89,8 @@ export default function MunicipalityDashboard() {
       collectionService.getToday(),
       blockchainService.getStats(),
     ])
-    if (s.error) toast.error('Failed to load dashboard data')
+    const anyError = s.error && a.error && c.error && bc.error
+    setLoadError(anyError)
     if (s.data)  setStats(s.data)
     if (a.data)  setAlerts((a.data.alerts || []).slice(0, 5))
     if (c.data)  setCollections((c.data.events || []).slice(0, 10))
@@ -115,7 +117,7 @@ export default function MunicipalityDashboard() {
           const wasCritical = (payload.old?.fill_level ?? 0) >= 80
           const isCritical  = fill >= 80
           if (isCritical && !wasCritical) {
-            toast.error(`🚨 Bin ${payload.new.bin_id} is now critical (${fill}%)`)
+            toast.error(`Bin ${payload.new.bin_id} is now critical (${fill}%)`)
             return { ...prev, critical_bins: (prev.critical_bins || 0) + 1 }
           }
           if (!isCritical && wasCritical) {
@@ -130,7 +132,7 @@ export default function MunicipalityDashboard() {
     const unsubAlert = realtimeService.onAlertChange((payload) => {
       if (payload.eventType === 'INSERT' && !payload.new?.is_resolved) {
         setAlerts((prev) => [payload.new, ...prev].slice(0, 5))
-        toast.error(`⚠️ New alert: ${payload.new?.title}`)
+        toast.error(`New alert: ${payload.new?.title}`)
       }
     })
 
@@ -210,6 +212,12 @@ export default function MunicipalityDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {loadError && (
+        <div className="card border border-red-500/40 bg-red-500/10 text-red-400 text-xs px-4 py-3 flex items-center gap-2">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+          Backend unreachable — showing cached / mock data. Start the FastAPI server and refresh.
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -247,12 +255,12 @@ export default function MunicipalityDashboard() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard icon="🗑️" label="TOTAL BINS"       value={stats?.total_bins}          accent="blue"   delay={0}    />
-        <StatCard icon="🚨" label="CRITICAL BINS"    value={stats?.critical_bins}        accent="red"    delay={0.05} sub={`≥80% full`} />
-        <StatCard icon="🚛" label="ACTIVE VEHICLES"  value={`${stats?.active_vehicles||0}/${stats?.total_vehicles||0}`} accent="green" delay={0.1} />
-        <StatCard icon="📦" label="COLLECTIONS TODAY" value={stats?.collections_today}   accent="gold"   delay={0.15} />
-        <StatCard icon="⚠️" label="OPEN ALERTS"      value={stats?.unresolved_alerts}    accent="orange" delay={0.2}  />
-        <StatCard icon="⛓️" label="CHAIN TXS"        value={chainStats?.total_transactions} accent="purple" delay={0.25} />
+        <StatCard icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>} label="TOTAL BINS" value={stats?.total_bins} accent="blue" delay={0} />
+        <StatCard icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>} label="CRITICAL BINS" value={stats?.critical_bins} accent="red" delay={0.05} sub="≥80% full" />
+        <StatCard icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2zM13 6l3 4h3l1 3v3h-2" /></svg>} label="ACTIVE VEHICLES" value={`${stats?.active_vehicles||0}/${stats?.total_vehicles||0}`} accent="green" delay={0.1} />
+        <StatCard icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>} label="COLLECTIONS TODAY" value={stats?.collections_today} accent="gold" delay={0.15} />
+        <StatCard icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>} label="OPEN ALERTS" value={stats?.unresolved_alerts} accent="orange" delay={0.2} />
+        <StatCard icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>} label="CITIZEN REPORTS" value={stats?.citizen_reports_today ?? 0} accent="purple" delay={0.25} sub={`${stats?.pending_reports ?? 0} pending`} />
       </div>
 
       {/* Row 2: Map + Alerts + Blockchain */}
@@ -265,7 +273,7 @@ export default function MunicipalityDashboard() {
           </div>
           <div className="rounded-lg overflow-hidden" style={{ height: 260, background: '#0a1628', border: '1px solid #1a3a5c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="text-center">
-              <div className="text-4xl mb-2">🗺️</div>
+              <div className="mb-2 text-txt-secondary"><svg className="w-10 h-10 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg></div>
               <p className="text-txt-secondary text-xs">Navigate to <strong className="text-accent-blue">Live Map</strong> for full view</p>
               <p className="text-txt-secondary text-[10px] mt-1">{stats?.total_bins || 0} bins monitored</p>
             </div>

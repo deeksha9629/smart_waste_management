@@ -235,6 +235,18 @@ def submit_report(
         report_data["created_at"] = datetime.now(timezone.utc).isoformat()
         saved = db.create_waste_report(report_data)
 
+        # Create alert for municipality
+        try:
+            db.create_alert({
+                "alert_type": "citizen_report",
+                "severity": "medium" if payload.priority == "medium" else ("high" if payload.priority == "high" else "low"),
+                "title": f"Citizen Report: {payload.report_type.replace('_', ' ').title()}",
+                "message": payload.description or f"{payload.report_type} reported by citizen",
+                "bin_id": payload.bin_id,
+            })
+        except Exception:
+            pass  # Alert creation failure should not block report submission
+
         # Award bonus tokens for reporting
         try:
             wallet = db.get_citizen_tokens(current_user.user_id) or {"token_balance": 0, "total_earned": 0}

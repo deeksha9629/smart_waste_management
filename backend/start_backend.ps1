@@ -27,5 +27,5 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Write-Host "Starting backend on http://127.0.0.1:$Port" -ForegroundColor Green
-& $pythonExe -m uvicorn app.main:app --host 127.0.0.1 --port $Port --reload
+Write-Host "Starting backend on http://0.0.0.0:$Port" -ForegroundColor Green
+& $pythonExe -m uvicorn app.main:app --host 0.0.0.0 --port $Port --reload

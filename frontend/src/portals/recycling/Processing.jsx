@@ -7,11 +7,11 @@ import toast from 'react-hot-toast'
 const PIPELINE = ['received', 'sorting', 'processing', 'completed', 'rejected']
 
 const STAGE_STYLE = {
-  received:   { color: '#0ea5e9', badge: 'badge-blue',   icon: '📥' },
-  sorting:    { color: '#f59e0b', badge: 'badge-gold',   icon: '🔀' },
-  processing: { color: '#f97316', badge: 'badge-orange', icon: '⚙️' },
-  completed:  { color: '#10b981', badge: 'badge-green',  icon: '✅' },
-  rejected:   { color: '#ef4444', badge: 'badge-red',    icon: '❌' },
+  received:   { color: '#0ea5e9', badge: 'badge-blue',   icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> },
+  sorting:    { color: '#f59e0b', badge: 'badge-gold',   icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" /></svg> },
+  processing: { color: '#f97316', badge: 'badge-orange', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+  completed:  { color: '#10b981', badge: 'badge-green',  icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+  rejected:   { color: '#ef4444', badge: 'badge-red',    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
 }
 
 export default function Processing() {
@@ -79,7 +79,9 @@ export default function Processing() {
           <button onClick={() => setView('table')} className={`btn text-xs py-2 px-4 ${view === 'table' ? 'btn-primary' : 'btn-ghost'}`}>
             Table View
           </button>
-          <button onClick={load} className="btn btn-ghost text-xs py-2">🔄</button>
+          <button onClick={load} className="btn btn-ghost text-xs py-2 flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+          </button>
         </div>
       </div>
 

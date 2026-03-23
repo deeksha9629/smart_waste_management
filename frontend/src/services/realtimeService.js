@@ -26,8 +26,10 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL     || ''
 const SUPABASE_ANON    = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-const WS_BASE          = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
-                           .replace(/^http/, 'ws')
+// In dev, WebSocket goes through the Vite proxy (/api → ws://localhost:8000)
+const WS_BASE = import.meta.env.DEV
+  ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api`
+  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/^http/, 'ws')
 
 // ── Supabase client (anon key — read-only realtime) ───────────────────────────
 let _supabase = null
@@ -84,9 +86,11 @@ let _wsReconnectTimer = null
 let _wsToken = null
 let _wsCallback = null
 let _wsManualClose = false
+let _wsReconnectDelay = 5000
 
 function _connectWS(token, onMessage) {
-  if (_ws && _ws.readyState === WebSocket.OPEN) return
+  // Guard: don't open a second socket if one is already open or connecting
+  if (_ws && (_ws.readyState === WebSocket.OPEN || _ws.readyState === WebSocket.CONNECTING)) return
   _wsToken    = token
   _wsCallback = onMessage
   _wsManualClose = false
@@ -97,6 +101,7 @@ function _connectWS(token, onMessage) {
   _ws.onopen = () => {
     console.info('[WS] Connected to FastAPI WebSocket')
     clearTimeout(_wsReconnectTimer)
+    _wsReconnectDelay = 5000 // reset backoff on success
   }
 
   _ws.onmessage = (event) => {
@@ -107,17 +112,16 @@ function _connectWS(token, onMessage) {
     } catch { /* ignore malformed frames */ }
   }
 
-  _ws.onerror = (err) => {
-    console.warn('[WS] Error:', err)
-  }
+  _ws.onerror = () => { /* handled in onclose */ }
 
   _ws.onclose = (event) => {
-    console.info('[WS] Closed — code:', event.code)
+    _ws = null
     if (!_wsManualClose && event.code !== 4001 && event.code !== 4003) {
-      // Auto-reconnect after 5 s (skip auth failures)
+      // Exponential backoff: 5s → 10s → 20s → max 30s
       _wsReconnectTimer = setTimeout(() => {
+        _wsReconnectDelay = Math.min(_wsReconnectDelay * 2, 30000)
         if (_wsToken) _connectWS(_wsToken, _wsCallback)
-      }, 5000)
+      }, _wsReconnectDelay)
     }
   }
 }

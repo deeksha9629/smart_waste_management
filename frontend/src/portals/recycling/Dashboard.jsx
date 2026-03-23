@@ -37,7 +37,7 @@ function CapacityGauge({ pct }) {
         </text>
       </svg>
       <div className="text-xs text-txt-secondary mt-1">
-        {pct >= 90 ? '🔴 Near Full' : pct >= 60 ? '🟠 Moderate' : '🟢 Available'}
+        {pct >= 90 ? <span className="text-critical font-semibold">Near Full</span> : pct >= 60 ? <span className="text-warning font-semibold">Moderate</span> : <span className="text-accent-green font-semibold">Available</span>}
       </div>
     </div>
   )
@@ -91,7 +91,7 @@ export default function RecyclingDashboard() {
     const unsub = realtimeService.onIntakeChange((payload) => {
       if (payload.eventType === 'INSERT') {
         setIntake((prev) => [payload.new, ...prev].slice(0, 10))
-        toast.success(`📦 New intake: ${payload.new?.waste_type} — ${payload.new?.gross_weight_kg ?? payload.new?.weight_kg ?? '?'} kg`)
+        toast.success(`New intake: ${payload.new?.waste_type} — ${payload.new?.gross_weight_kg ?? payload.new?.weight_kg ?? '?'} kg`)
       } else if (payload.eventType === 'UPDATE') {
         setIntake((prev) =>
           prev.map((r) => r.intake_id === payload.new.intake_id ? { ...r, ...payload.new } : r)
@@ -111,7 +111,7 @@ export default function RecyclingDashboard() {
         const d = msg.data
         if (d.vehicles?.length) setVehicles(d.vehicles)
         if (d.plants_near_capacity > 0) {
-          toast.error(`⚠️ ${d.plants_near_capacity} plant(s) near capacity`)
+          toast.error(`${d.plants_near_capacity} plant(s) near capacity`)
         }
       }
     })

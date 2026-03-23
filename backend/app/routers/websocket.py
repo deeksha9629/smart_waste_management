@@ -13,7 +13,7 @@ from app.database import db
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
-MUNICIPALITY_ROLES = {"municipality_admin", "municipality_officer"}
+MUNICIPALITY_ROLES = {"municipality_admin", "municipality_officer", "government_agency", "private_company"}
 CITIZEN_ROLES = {"citizen", "community_group"}
 RECYCLING_ROLES = {"recycling_manager", "recycling_operator"}
 

@@ -4,13 +4,20 @@ import { format } from 'date-fns'
 import { citizensAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 
+const BusIcon = () => <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 17a2 2 0 11-4 0 2 2 0 014 0zM20 17a2 2 0 11-4 0 2 2 0 014 0zM3 10h18M3 6h18M3 14h18M5 6v12M19 6v12" /></svg>
+const TreeIcon = () => <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+const BoltIcon = () => <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+const ShoppingIcon = () => <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+const LightbulbIcon = () => <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+const TrainIcon = () => <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+
 const REDEMPTIONS = [
-  { type: 'transit_pass_day',    label: 'Day Transit Pass',      cost: 200,  icon: '🚌', desc: '1-day unlimited bus/metro' },
-  { type: 'tree_planting_donation', label: 'Plant a Tree',       cost: 100,  icon: '🌳', desc: 'Donate to city reforestation' },
-  { type: 'utility_discount_5', label: '5% Utility Discount',    cost: 500,  icon: '⚡', desc: 'Applied to next electricity bill' },
-  { type: 'grocery_voucher_10', label: '$10 Grocery Voucher',     cost: 800,  icon: '🛒', desc: 'Valid at partner supermarkets' },
-  { type: 'utility_discount_10',label: '10% Utility Discount',   cost: 900,  icon: '💡', desc: 'Applied to next electricity bill' },
-  { type: 'transit_pass_week',  label: 'Weekly Transit Pass',    cost: 1200, icon: '🚇', desc: '7-day unlimited public transport' },
+  { type: 'transit_pass_day',       label: 'Day Transit Pass',     cost: 200,  Icon: BusIcon,      desc: '1-day unlimited bus/metro' },
+  { type: 'tree_planting_donation', label: 'Plant a Tree',         cost: 100,  Icon: TreeIcon,     desc: 'Donate to city reforestation' },
+  { type: 'utility_discount_5',     label: '5% Utility Discount',  cost: 500,  Icon: BoltIcon,     desc: 'Applied to next electricity bill' },
+  { type: 'grocery_voucher_10',     label: '₹500 Grocery Voucher',  cost: 800,  Icon: ShoppingIcon, desc: 'Valid at partner supermarkets' },
+  { type: 'utility_discount_10',    label: '10% Utility Discount', cost: 900,  Icon: LightbulbIcon,desc: 'Applied to next electricity bill' },
+  { type: 'transit_pass_week',      label: 'Weekly Transit Pass',  cost: 1200, Icon: TrainIcon,    desc: '7-day unlimited public transport' },
 ]
 
 export default function MyTokens() {
@@ -55,7 +62,7 @@ export default function MyTokens() {
 
       {/* Balance card */}
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card card-accent-gold text-center py-8">
-        <div className="text-5xl mb-2">🪙</div>
+        <div className="flex justify-center mb-2"><svg className="w-12 h-12 text-accent-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
         <div className="text-5xl font-black text-accent-gold glow-gold mb-1">
           {(wallet?.token_balance || 0).toLocaleString()}
         </div>
@@ -89,11 +96,11 @@ export default function MyTokens() {
                 className={`card ${canAfford ? 'card-accent-gold' : ''}`}
                 style={{ opacity: canAfford ? 1 : 0.6 }}
               >
-                <div className="text-3xl mb-2">{opt.icon}</div>
+                <div className="mb-2 text-accent-gold"><opt.Icon /></div>
                 <div className="text-sm font-bold text-txt-primary mb-1">{opt.label}</div>
                 <div className="text-xs text-txt-secondary mb-3">{opt.desc}</div>
                 <div className="flex items-center justify-between">
-                  <span className="text-accent-gold font-black">🪙 {opt.cost.toLocaleString()}</span>
+                  <span className="text-accent-gold font-black flex items-center gap-1"><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{opt.cost.toLocaleString()}</span>
                   <button
                     onClick={() => handleRedeem(opt)}
                     disabled={!canAfford || redeeming === opt.type}

@@ -2,7 +2,7 @@ import logging
 import uuid
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -31,6 +31,33 @@ class CollectionEventIn(BaseModel):
     notes: Optional[str] = None
 
 
+# ── Sample Data Generators ────────────────────────────────────────────────────
+
+def _get_sample_collections(event_count: int = 20) -> list[dict]:
+    """Generate realistic sample collection events for demo purposes."""
+    import random
+    events = []
+    waste_types = ["organic", "plastic", "glass", "metal", "paper"]
+    now = datetime.now(timezone.utc)
+    
+    for i in range(event_count):
+        collected_at = now - timedelta(hours=random.randint(1, 168))
+        events.append({
+            "id": i + 1,
+            "event_id": f"EVT-{uuid.uuid4().hex[:10].upper()}",
+            "bin_id": f"BIN-{(i % 50) + 1:03d}",
+            "vehicle_id": f"VEH-{(i % 5) + 1:03d}",
+            "fill_before": random.randint(60, 95),
+            "fill_after": random.randint(5, 15),
+            "waste_collected_kg": random.uniform(10, 150),
+            "waste_type": random.choice(waste_types),
+            "is_compliant": random.choice([True, True, True, False]),
+            "compliance_score": random.randint(70, 100),
+            "collected_at": collected_at.isoformat(),
+        })
+    return events
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _sha256(data: dict) -> str:
@@ -38,7 +65,6 @@ def _sha256(data: dict) -> str:
 
 
 def _run_compliance(event: dict, saved_id: str):
-    """Run compliance checks and record violations + alerts inline."""
     try:
         vehicles = db.get_all_vehicles()
         vehicle_map = {v["vehicle_id"]: v for v in vehicles}
@@ -46,7 +72,6 @@ def _run_compliance(event: dict, saved_id: str):
         failed = _check_event(event, vehicle)
         if not failed:
             return
-
         penalty = sum(PENALTY_TABLE.get(c, 0) for c in failed)
         supabase.table("violations").insert({
             "violation_id": f"VIO-{uuid.uuid4().hex[:8].upper()}",
@@ -59,7 +84,6 @@ def _run_compliance(event: dict, saved_id: str):
             "blockchain_hash": _sha256({"event_id": saved_id, "checks": failed}),
             "recorded_at": datetime.now(timezone.utc).isoformat(),
         }).execute()
-
         db.create_alert({
             "alert_type": "compliance_violation",
             "severity": "high",
@@ -73,7 +97,6 @@ def _run_compliance(event: dict, saved_id: str):
 
 
 def _record_blockchain(saved_event: dict):
-    """Write blockchain log for a collection event."""
     try:
         tx_hash = _sha256({
             "event_id": saved_event.get("event_id"),
@@ -94,7 +117,6 @@ def _record_blockchain(saved_event: dict):
             },
             "recorded_at": datetime.now(timezone.utc).isoformat(),
         })
-        logger.info("blockchain: logged event %s hash=%s", saved_event.get("event_id"), tx_hash)
     except Exception as e:
         logger.error("blockchain recording error: %s", e)
 
@@ -124,16 +146,9 @@ def create_collection(
         }
         clean_event = {k: v for k, v in event_data.items() if v is not None}
         saved = db.save_collection_event(clean_event)
-
-        # Reset bin fill level
         db.update_bin(payload.bin_id, {"fill_level": payload.fill_after, "last_collected": clean_event["collected_at"]})
-
-        # Trigger compliance agent inline
         _run_compliance(clean_event, saved["id"])
-
-        # Trigger blockchain recording
         _record_blockchain(saved)
-
         logger.info("create_collection: event=%s bin=%s vehicle=%s", event_id, payload.bin_id, payload.vehicle_id)
         return saved
     except HTTPException:
@@ -144,6 +159,7 @@ def create_collection(
 
 
 # ── GET /collections/today ────────────────────────────────────────────────────
+# Static routes MUST come before /{event_id}
 
 @router.get("/today", summary="Today's collection events")
 def todays_collections(current_user: TokenData = Depends(get_current_user)):
@@ -157,8 +173,22 @@ def todays_collections(current_user: TokenData = Depends(get_current_user)):
             .execute()
         )
         events = res.data or []
-        logger.info("todays_collections: %d events", len(events))
+        
+        # Fall back to sample collections if database is empty
+        if not events:
+            sample = _get_sample_collections(10)
+            # Filter to only today's events
+            now = datetime.now(timezone.utc)
+            today_start_dt = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            events = [e for e in sample if datetime.fromisoformat(e["collected_at"].replace("Z", "+00:00")) >= today_start_dt]
+            logger.info("todays_collections: returned %d sample events", len(events))
+        else:
+            logger.info("todays_collections: %d events from database", len(events))
+        
         return {"date": today_start[:10], "count": len(events), "events": events}
+    except Exception as e:
+        logger.error("todays_collections error: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error("todays_collections error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
@@ -168,8 +198,8 @@ def todays_collections(current_user: TokenData = Depends(get_current_user)):
 
 @router.get("/history", summary="Collection history with optional date filter")
 def collection_history(
-    from_date: Optional[str] = Query(default=None, description="ISO date string, e.g. 2024-01-01"),
-    to_date: Optional[str] = Query(default=None, description="ISO date string, e.g. 2024-01-31"),
+    from_date: Optional[str] = Query(default=None),
+    to_date: Optional[str] = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     current_user: TokenData = Depends(get_current_user),
 ):
@@ -181,33 +211,18 @@ def collection_history(
             query = query.lte("collected_at", to_date + "T23:59:59Z")
         res = query.order("collected_at", desc=True).limit(limit).execute()
         events = res.data or []
-        logger.info("collection_history: %d events returned", len(events))
+        
+        # Fall back to sample collections if database is empty
+        if not events:
+            sample = _get_sample_collections(limit)
+            events = sample
+            logger.info("collection_history: returned %d sample events", len(events))
+        else:
+            logger.info("collection_history: %d events from database", len(events))
+        
         return {"count": len(events), "events": events}
     except Exception as e:
         logger.error("collection_history error: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ── GET /collections/{event_id} ───────────────────────────────────────────────
-
-@router.get("/{event_id}", summary="Single collection event details")
-def get_collection_event(event_id: str, current_user: TokenData = Depends(get_current_user)):
-    try:
-        res = (
-            supabase.table("collection_events")
-            .select("*")
-            .eq("event_id", event_id)
-            .single()
-            .execute()
-        )
-        if not res.data:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Event '{event_id}' not found")
-        logger.info("get_collection_event: %s", event_id)
-        return res.data
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("get_collection_event error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -229,8 +244,40 @@ def collections_for_bin(
             .execute()
         )
         events = res.data or []
-        logger.info("collections_for_bin: %s returned %d events", bin_id, len(events))
+        
+        # Fall back to sample collections for this bin if database is empty
+        if not events:
+            sample = _get_sample_collections(limit)
+            events = [e for e in sample if e["bin_id"] == bin_id]
+            logger.info("collections_for_bin: %s returned %d sample events", bin_id, len(events))
+        else:
+            logger.info("collections_for_bin: %s returned %d events from database", bin_id, len(events))
+        
         return {"bin_id": bin_id, "count": len(events), "events": events}
     except Exception as e:
         logger.error("collections_for_bin error: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── GET /collections/{event_id} ───────────────────────────────────────────────
+# Dynamic route LAST
+
+@router.get("/{event_id}", summary="Single collection event details")
+def get_collection_event(event_id: str, current_user: TokenData = Depends(get_current_user)):
+    try:
+        res = (
+            supabase.table("collection_events")
+            .select("*")
+            .eq("event_id", event_id)
+            .single()
+            .execute()
+        )
+        if not res.data:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Event '{event_id}' not found")
+        logger.info("get_collection_event: %s", event_id)
+        return res.data
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("get_collection_event error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))

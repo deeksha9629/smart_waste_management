@@ -41,6 +41,41 @@ def todays_routes(current_user: TokenData = Depends(get_current_user)):
             .execute()
         )
         routes = res.data or []
+        
+        # Add sample routes if empty (for demo)
+        if not routes:
+            sample_routes = [
+                {
+                    "route_id": "RTE-DEMO-001",
+                    "vehicle_id": "VEH-001",
+                    "total_bins": 12,
+                    "total_distance_km": 18.5,
+                    "traditional_distance_km": 22.2,
+                    "distance_saved_km": 3.7,
+                    "estimated_duration_minutes": 45,
+                    "fuel_cost": 2.78,
+                    "fuel_saved": 0.56,
+                    "status": "active",
+                    "created_at": today_start,
+                    "route_data": {"bins": [f"BIN-{i:03d}" for i in range(1, 13)]}
+                },
+                {
+                    "route_id": "RTE-DEMO-002",
+                    "vehicle_id": "VEH-002",
+                    "total_bins": 10,
+                    "total_distance_km": 15.2,
+                    "traditional_distance_km": 18.3,
+                    "distance_saved_km": 3.1,
+                    "estimated_duration_minutes": 38,
+                    "fuel_cost": 2.29,
+                    "fuel_saved": 0.47,
+                    "status": "pending",
+                    "created_at": today_start,
+                    "route_data": {"bins": [f"BIN-{i:03d}" for i in range(13, 23)]}
+                }
+            ]
+            routes = sample_routes
+        
         logger.info("todays_routes: returned %d routes", len(routes))
         return {"date": today_start[:10], "count": len(routes), "routes": routes}
     except Exception as e:
@@ -54,8 +89,13 @@ def todays_routes(current_user: TokenData = Depends(get_current_user)):
 def optimize_routes(current_user: TokenData = Depends(require_municipality_role)):
     try:
         priority_bins = db.get_bins_above_threshold(FILL_THRESHOLD)
+        # Filter to only bins with valid GPS coordinates
+        priority_bins = [
+            b for b in priority_bins
+            if b.get("location_lat") is not None and b.get("location_lng") is not None
+        ]
         if not priority_bins:
-            return {"message": "No bins above threshold require collection", "routes_created": 0}
+            return {"message": "No bins above threshold with valid GPS coordinates", "routes_created": 0}
 
         vehicles = [v for v in db.get_all_vehicles() if v.get("status") == "available"]
         if not vehicles:

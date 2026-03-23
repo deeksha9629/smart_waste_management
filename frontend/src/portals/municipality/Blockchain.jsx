@@ -80,14 +80,17 @@ export default function Blockchain() {
             onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
           />
           <button onClick={handleVerify} disabled={verifying} className="btn btn-primary px-6">
-            {verifying ? <span className="spinner" /> : '🔍'}
+            {verifying ? <span className="spinner" /> : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>}
             {verifying ? 'VERIFYING...' : 'VERIFY'}
           </button>
         </div>
         {verifyResult && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 p-4 rounded-lg border" style={{ borderColor: verifyResult.verified ? '#10b981' : '#ef4444', background: verifyResult.verified ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)' }}>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">{verifyResult.verified ? '✅' : '❌'}</span>
+              {verifyResult.verified
+                ? <svg className="w-5 h-5 text-accent-green" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                : <svg className="w-5 h-5 text-critical" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              }
               <span className={`font-bold text-sm ${verifyResult.verified ? 'text-accent-green' : 'text-critical'}`}>
                 {verifyResult.verified ? 'VERIFIED — Hash matches blockchain record' : 'INVALID — Hash mismatch detected'}
               </span>

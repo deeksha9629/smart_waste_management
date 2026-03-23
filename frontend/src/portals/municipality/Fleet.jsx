@@ -193,7 +193,7 @@ export default function FleetManagement() {
             />
           </div>
           <button type="submit" disabled={dispatching} className="btn btn-primary text-xs py-2.5">
-            {dispatching ? <span className="spinner" /> : '🚛'}
+            {dispatching ? <span className="spinner" /> : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2z" /></svg>}
             {dispatching ? 'DISPATCHING...' : 'DISPATCH'}
           </button>
         </form>
@@ -235,7 +235,9 @@ export default function FleetManagement() {
                 </div>
                 <div className="text-xs text-txt-secondary mt-0.5">{v.vehicle_number || 'No plate'}</div>
               </div>
-              <span className="text-2xl">🚛</span>
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-bg-secondary border border-border-dim shrink-0">
+              <svg className="w-5 h-5 text-accent-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2zM13 6l3 4h3l1 3v3h-2" /></svg>
+            </div>
             </div>
 
             {/* Load bar */}

@@ -38,31 +38,38 @@ def run_prediction_agent():
     try:
         bins = db.get_all_bins()
         for bin_ in bins:
+            current_fill = bin_.get("fill_level", 0)
             history = db.get_bin_history(bin_["bin_id"], hours=6)
-            if len(history) < 2:
-                continue
 
-            history.sort(key=lambda r: r["recorded_at"])
-            base_ts = datetime.fromisoformat(history[0]["recorded_at"].replace("Z", "+00:00")).timestamp()
-            times = [
-                datetime.fromisoformat(r["recorded_at"].replace("Z", "+00:00")).timestamp() - base_ts
-                for r in history
-            ]
-            fills = [r["fill_level"] for r in history]
+            if len(history) >= 2:
+                history.sort(key=lambda r: r["recorded_at"])
+                base_ts = datetime.fromisoformat(history[0]["recorded_at"].replace("Z", "+00:00")).timestamp()
+                times = [
+                    datetime.fromisoformat(r["recorded_at"].replace("Z", "+00:00")).timestamp() - base_ts
+                    for r in history
+                ]
+                fills = [r["fill_level"] for r in history]
+                pred_6h = _linear_predict(times, fills, 6)
+                pred_12h = _linear_predict(times, fills, 12)
+                confidence = 0.80
+            else:
+                # Fallback: assume ~3% fill growth per hour
+                growth_rate = 3
+                pred_6h  = min(100, current_fill + growth_rate * 6)
+                pred_12h = min(100, current_fill + growth_rate * 12)
+                confidence = 0.50
 
-            pred_6h = _linear_predict(times, fills, 6)
-            pred_12h = _linear_predict(times, fills, 12)
             priority = _priority(pred_6h, pred_12h)
             overflow_risk = pred_6h >= 90
 
             db.save_prediction({
                 "bin_id": bin_["bin_id"],
-                "current_fill": bin_.get("fill_level", 0),
+                "current_fill": current_fill,
                 "predicted_fill_6hrs": pred_6h,
                 "predicted_fill_12hrs": pred_12h,
                 "overflow_risk": overflow_risk,
                 "priority": priority,
-                "confidence": 0.80,
+                "confidence": confidence,
                 "recommended_action": "Schedule immediate collection" if overflow_risk else "Monitor",
                 "model_version": "linear_v1",
                 "predicted_at": datetime.now(timezone.utc).isoformat(),

@@ -17,12 +17,12 @@ export default function MunicipalityLayout() {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isMunicipality)  return <Navigate to="/login" replace />
+  if (!isMunicipality)  return <Navigate to="/" replace />
 
   return (
-    <div className="min-h-screen grid-bg">
+    <div className="flex min-h-screen grid-bg">
       <MunicipalNavbar />
-      <main className="main-content">
+      <main className="main-content flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>

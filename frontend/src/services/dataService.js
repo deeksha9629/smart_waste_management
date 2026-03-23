@@ -18,14 +18,43 @@ import {
 // ── Toggle ────────────────────────────────────────────────────────────────────
 export const USE_REAL_API = import.meta.env.VITE_USE_REAL_API !== 'false'
 
-// ── Helper: wrap API call into { data, error } ────────────────────────────────
-async function call(apiFn) {
+// ── Caching layer for performance ────────────────────────────────────────────
+const CACHE = {
+  data: {},
+  timers: {},
+}
+
+function getCached(key) {
+  return CACHE.data[key] || null
+}
+
+function setCached(key, value, ttlMs = 30000) { // 30s default TTL
+  CACHE.data[key] = value
+  if (CACHE.timers[key]) clearTimeout(CACHE.timers[key])
+  CACHE.timers[key] = setTimeout(() => {
+    delete CACHE.data[key]
+    delete CACHE.timers[key]
+  }, ttlMs)
+}
+
+// ── Helper: wrap API call into { data, error } with caching ───────────────────
+async function call(apiFn, cacheKey = null, cacheTtl = 30000) {
+  // Check cache first
+  if (cacheKey) {
+    const cached = getCached(cacheKey)
+    if (cached) return { data: cached, error: null, fromCache: true }
+  }
+
   try {
     const res = await apiFn()
-    return { data: res.data, error: null }
+    // Cache successful response
+    if (cacheKey && res.data) {
+      setCached(cacheKey, res.data, cacheTtl)
+    }
+    return { data: res.data, error: null, fromCache: false }
   } catch (err) {
     const msg = err.response?.data?.detail || err.message || 'Unknown error'
-    return { data: null, error: msg }
+    return { data: null, error: msg, fromCache: false }
   }
 }
 
@@ -113,6 +142,7 @@ const MOCK = {
     violations_today: 2,
     total_plants: 3,
     operational_plants: 3,
+    generated_at: new Date().toISOString(),
   },
 
   citizenTokens: {
@@ -132,21 +162,51 @@ const MOCK = {
   })),
 
   recyclingDashboard: {
+    plant: {
+      plant_id: 'PLANT-001',
+      plant_name: 'KL Central Recycling Plant',
+      address: 'Kuala Lumpur, Malaysia',
+      status: 'operational',
+      current_load_kg: 12400,
+      capacity_kg_per_day: 20000,
+    },
     plant_name: 'KL Central Recycling Plant',
-    current_load_kg: 12400,
-    capacity_kg_per_day: 20000,
     capacity_pct: 62,
-    intake_today: 18,
-    processed_today: 14,
-    pending_processing: 4,
-    revenue_today: 3840,
+    period_days: 7,
+    total_intake_records: 84,
+    total_weight_kg: 48200,
+    by_processing_status: {
+      pending: 8,
+      processing: 24,
+      completed: 48,
+      rejected: 4,
+    },
+    by_waste_type: {
+      recyclable: 32,
+      organic: 24,
+      general: 20,
+      electronic: 5,
+      hazardous: 3,
+    },
+    by_waste_type_kg: {
+      recyclable: 18400,
+      organic: 12800,
+      general: 12000,
+      electronic: 3200,
+      hazardous: 1800,
+    },
+    incoming_vehicles: 3,
+    generated_at: new Date().toISOString(),
   },
 
   intake: Array.from({ length: 12 }, (_, i) => ({
     intake_id: `INT-${String(i + 1).padStart(4, '0')}`,
     vehicle_id: `VH-${String((i % 6) + 1).padStart(3, '0')}`,
     waste_type: ['recyclable', 'organic', 'general', 'electronic', 'hazardous'][i % 5],
+    gross_weight_kg: parseFloat((200 + Math.random() * 800).toFixed(1)),
+    net_weight_kg: parseFloat((180 + Math.random() * 750).toFixed(1)),
     weight_kg: parseFloat((200 + Math.random() * 800).toFixed(1)),
+    quality_grade: ['A', 'B', 'C', 'rejected'][i % 4],
     processing_status: ['pending', 'processing', 'completed', 'rejected'][i % 4],
     blockchain_hash: `0x${Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
     received_at: new Date(Date.now() - i * 2400000).toISOString(),
@@ -191,8 +251,8 @@ const MOCK = {
 
 // ── Bins ──────────────────────────────────────────────────────────────────────
 export const binService = {
-  getAll:        () => USE_REAL_API ? call(() => binsAPI.getBins())          : Promise.resolve({ data: MOCK.bins, error: null }),
-  getCritical:   (t) => USE_REAL_API ? call(() => binsAPI.getCritical(t))    : Promise.resolve({ data: MOCK.bins.filter(b => b.fill_level >= (t || 80)), error: null }),
+  getAll:        () => USE_REAL_API ? call(() => binsAPI.getBins(), 'bins_all', 20000)          : Promise.resolve({ data: MOCK.bins, error: null }),
+  getCritical:   (t) => USE_REAL_API ? call(() => binsAPI.getCritical(t), `bins_critical_${t||80}`, 20000)    : Promise.resolve({ data: MOCK.bins.filter(b => b.fill_level >= (t || 80)), error: null }),
   getById:       (id) => USE_REAL_API ? call(() => binsAPI.getBinById(id))   : Promise.resolve({ data: MOCK.bins.find(b => b.bin_id === id) || null, error: null }),
   getHistory:    (id, h) => USE_REAL_API ? call(() => binsAPI.getBinHistory(id, h)) : Promise.resolve({ data: Array.from({ length: 24 }, (_, i) => ({ recorded_at: new Date(Date.now() - i * 3600000).toISOString(), fill_level: Math.floor(Math.random() * 100) })), error: null }),
   getPrediction: (id) => USE_REAL_API ? call(() => binsAPI.getBinPrediction(id)) : Promise.resolve({ data: MOCK.predictions.find(p => p.bin_id === id) || MOCK.predictions[0], error: null }),
@@ -212,7 +272,7 @@ export const vehicleService = {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 export const routeService = {
-  getAll:    ()       => USE_REAL_API ? call(() => routesAPI.getRoutes())              : Promise.resolve({ data: MOCK.routes, error: null }),
+  getAll:    ()       => USE_REAL_API ? call(() => routesAPI.getRoutes(), 'routes_all', 20000).then(r => r.error ? r : { ...r, data: r.data?.routes ?? r.data })              : Promise.resolve({ data: MOCK.routes, error: null }),
   optimize:  ()       => USE_REAL_API ? call(() => routesAPI.optimizeRoutes())         : Promise.resolve({ data: { routes_created: MOCK.routes.length, message: 'Routes optimized (mock)' }, error: null }),
   getById:   (id)     => USE_REAL_API ? call(() => routesAPI.getRoute(id))             : Promise.resolve({ data: MOCK.routes.find(r => r.route_id === id) || null, error: null }),
   setStatus: (id, s)  => USE_REAL_API ? call(() => routesAPI.updateRouteStatus(id, s)) : Promise.resolve({ data: { success: true }, error: null }),
@@ -237,15 +297,15 @@ export const predictionService = {
 
 // ── Municipality ──────────────────────────────────────────────────────────────
 export const municipalityService = {
-  getDashboard:       ()        => USE_REAL_API ? call(() => municipalityAPI.getDashboard())          : Promise.resolve({ data: MOCK.municipalityDashboard, error: null }),
-  getAlerts:          (sev)     => USE_REAL_API ? call(() => municipalityAPI.getAlerts(sev))          : Promise.resolve({ data: { alerts: sev ? MOCK.alerts.filter(a => a.severity === sev) : MOCK.alerts }, error: null }),
+  getDashboard:       ()        => USE_REAL_API ? call(() => municipalityAPI.getDashboard(), 'municipality_dashboard', 60000)          : Promise.resolve({ data: MOCK.municipalityDashboard, error: null }),
+  getAlerts:          (sev)     => USE_REAL_API ? call(() => municipalityAPI.getAlerts(sev), `municipality_alerts_${sev}`, 30000)          : Promise.resolve({ data: { alerts: sev ? MOCK.alerts.filter(a => a.severity === sev) : MOCK.alerts }, error: null }),
   createAlert:        (d)       => USE_REAL_API ? call(() => municipalityAPI.createAlert(d))          : Promise.resolve({ data: { alert_id: 'ALT-NEW', ...d }, error: null }),
   resolveAlert:       (id)      => USE_REAL_API ? call(() => municipalityAPI.resolveAlert(id))        : Promise.resolve({ data: { success: true }, error: null }),
-  getReports:         (status)  => USE_REAL_API ? call(() => municipalityAPI.getReports(status))      : Promise.resolve({ data: { reports: status ? MOCK.wasteReports.filter(r => r.status === status) : MOCK.wasteReports }, error: null }),
+  getReports:         (status)  => USE_REAL_API ? call(() => municipalityAPI.getReports(status), `municipality_reports_${status}`, 60000)      : Promise.resolve({ data: { reports: status ? MOCK.wasteReports.filter(r => r.status === status) : MOCK.wasteReports }, error: null }),
   updateReportStatus: (id, s)   => USE_REAL_API ? call(() => municipalityAPI.updateReportStatus(id, s)) : Promise.resolve({ data: { success: true }, error: null }),
-  getFleet:           ()        => USE_REAL_API ? call(() => municipalityAPI.getFleet())              : Promise.resolve({ data: { vehicles: MOCK.vehicles }, error: null }),
-  getCompliance:      (days)    => USE_REAL_API ? call(() => municipalityAPI.getCompliance(days))     : Promise.resolve({ data: { compliance_rate: 87, violations: 2, events: [] }, error: null }),
-  getZones:           ()        => USE_REAL_API ? call(() => municipalityAPI.getZones())              : Promise.resolve({ data: { zones: ['Zone A', 'Zone B', 'Zone C', 'Zone D', 'Zone E'] }, error: null }),
+  getFleet:           ()        => USE_REAL_API ? call(() => municipalityAPI.getFleet(), 'municipality_fleet', 45000)              : Promise.resolve({ data: { vehicles: MOCK.vehicles }, error: null }),
+  getCompliance:      (days)    => USE_REAL_API ? call(() => municipalityAPI.getCompliance(days), `municipality_compliance_${days}`, 60000)     : Promise.resolve({ data: { compliance_rate: 87, violations: 2, events: [] }, error: null }),
+  getZones:           ()        => USE_REAL_API ? call(() => municipalityAPI.getZones(), 'municipality_zones', 120000)              : Promise.resolve({ data: { zones: ['Zone A', 'Zone B', 'Zone C', 'Zone D', 'Zone E'] }, error: null }),
   dispatch:           (vId, bIds) => USE_REAL_API ? call(() => municipalityAPI.dispatchVehicle(vId, bIds)) : Promise.resolve({ data: { success: true, message: 'Vehicle dispatched (mock)' }, error: null }),
 }
 
@@ -261,13 +321,14 @@ export const citizenService = {
 
 // ── Recycling ─────────────────────────────────────────────────────────────────
 export const recyclingService = {
-  getDashboard:       ()        => USE_REAL_API ? call(() => recyclingAPI.getDashboard())           : Promise.resolve({ data: MOCK.recyclingDashboard, error: null }),
-  getIntake:          (plantId) => USE_REAL_API ? call(() => recyclingAPI.getIntake(plantId))       : Promise.resolve({ data: { intake: MOCK.intake }, error: null }),
-  recordIntake:       (d)       => USE_REAL_API ? call(() => recyclingAPI.recordIntake(d))          : Promise.resolve({ data: { intake_id: 'INT-NEW', ...d }, error: null }),
+  getDashboard:       ()        => USE_REAL_API ? call(() => recyclingAPI.getDashboard(), 'recycling_dashboard', 60000)            : Promise.resolve({ data: MOCK.recyclingDashboard, error: null }),
+  getIntake:          (plantId) => USE_REAL_API ? call(() => recyclingAPI.getIntake(plantId), `recycling_intake_${plantId}`, 45000)        : Promise.resolve({ data: { intake: MOCK.intake }, error: null }),
+  recordIntake:       (d)       => USE_REAL_API ? call(() => recyclingAPI.recordIntake(d))           : Promise.resolve({ data: { intake_id: 'INT-NEW', ...d }, error: null }),
   updateIntakeStatus: (id, s)   => USE_REAL_API ? call(() => recyclingAPI.updateIntakeStatus(id, s)) : Promise.resolve({ data: { success: true }, error: null }),
-  getCapacity:        ()        => USE_REAL_API ? call(() => recyclingAPI.getCapacity())            : Promise.resolve({ data: { plants: [{ plant_name: 'KL Central', capacity_pct: 62 }] }, error: null }),
-  getBlockchain:      ()        => USE_REAL_API ? call(() => recyclingAPI.getBlockchainRecords())   : Promise.resolve({ data: { records: MOCK.blockchainTxs.filter(t => t.tx_type === 'recycling_intake') }, error: null }),
-  getReports:         (days)    => USE_REAL_API ? call(() => recyclingAPI.getReports(days))         : Promise.resolve({ data: { summary: MOCK.recyclingDashboard }, error: null }),
+  getCapacity:        ()        => USE_REAL_API ? call(() => recyclingAPI.getCapacity(), 'recycling_capacity', 30000)             : Promise.resolve({ data: { count: 1, plants: [{ plant_id: 'PLANT-001', plant_name: 'KL Central', status: 'operational', current_load_kg: 12400, capacity_kg_per_day: 20000, utilisation_pct: 62, is_near_capacity: false }] }, error: null }),
+  getBlockchain:      ()        => USE_REAL_API ? call(() => recyclingAPI.getBlockchainRecords(), 'recycling_blockchain', 60000)    : Promise.resolve({ data: { records: MOCK.blockchainTxs.filter(t => t.tx_type === 'recycling_intake') }, error: null }),
+  getReports:         (days)    => USE_REAL_API ? call(() => recyclingAPI.getReports(days), `recycling_reports_${days}`, 60000)          : Promise.resolve({ data: { summary: MOCK.recyclingDashboard }, error: null }),
+  getPlants:          ()        => USE_REAL_API ? call(() => recyclingAPI.getPlants(), 'recycling_plants', 120000)               : Promise.resolve({ data: [{ id: 'PLANT-001', plant_id: 'PLANT-001', plant_name: 'KL Central Recycling Plant', status: 'operational', location: 'Kuala Lumpur' }, { id: 'PLANT-002', plant_id: 'PLANT-002', plant_name: 'Selangor Waste Center', status: 'operational', location: 'Selangor' }], error: null }),
 }
 
 // ── Blockchain ────────────────────────────────────────────────────────────────

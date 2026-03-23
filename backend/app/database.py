@@ -25,7 +25,14 @@ class DatabaseService:
     def get_all_bins() -> list[dict]:
         try:
             res = supabase.table("bins").select("*").execute()
-            return res.data or []
+            bins = res.data or []
+            # Normalize field names for frontend compatibility
+            for b in bins:
+                if "sensor_battery" not in b:
+                    b["sensor_battery"] = b.get("battery_level", 100)
+                if "status" not in b:
+                    b["status"] = b.get("sensor_status", "active")
+            return bins
         except Exception as e:
             raise Exception(f"get_all_bins failed: {e}")
 
@@ -84,7 +91,13 @@ class DatabaseService:
                 .gte("fill_level", threshold)
                 .execute()
             )
-            return res.data or []
+            bins = res.data or []
+            for b in bins:
+                if "sensor_battery" not in b:
+                    b["sensor_battery"] = b.get("battery_level", 100)
+                if "status" not in b:
+                    b["status"] = b.get("sensor_status", "active")
+            return bins
         except Exception as e:
             raise Exception(f"get_bins_above_threshold failed: {e}")
 

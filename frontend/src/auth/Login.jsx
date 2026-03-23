@@ -4,20 +4,41 @@ import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAuth } from './AuthContext'
 
+const BuildingIcon = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  </svg>
+)
+const UserIcon = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+)
+const RecycleIcon = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  </svg>
+)
+const OrgIcon = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+)
+
 const PORTALS = [
-  { id: 'municipality_admin', label: 'Municipality',    icon: '🏛️', desc: 'City authority portal',              accent: 'selected',        color: '#0ea5e9' },
-  { id: 'citizen',            label: 'Citizen / Public', icon: '👤', desc: 'Public user portal',                accent: 'selected-green',  color: '#10b981' },
-  { id: 'recycling_manager',  label: 'Recycling Plant', icon: '♻️', desc: 'Processing center portal',          accent: 'selected-gold',   color: '#f59e0b' },
-  { id: 'government_agency',  label: 'Organization',    icon: '🏢', desc: 'Government, Private, Community',    accent: 'selected-purple', color: '#8b5cf6' },
+  { id: 'municipality_admin', label: 'Municipality',     Icon: BuildingIcon, desc: 'City authority portal',           accent: 'selected',        color: '#0ea5e9' },
+  { id: 'citizen',            label: 'Citizen / Public', Icon: UserIcon,     desc: 'Public user portal',              accent: 'selected-green',  color: '#10b981' },
+  { id: 'recycling_manager',  label: 'Recycling Plant',  Icon: RecycleIcon,  desc: 'Processing center portal',        accent: 'selected-gold',   color: '#f59e0b' },
+  { id: 'government_agency',  label: 'Organization',     Icon: OrgIcon,      desc: 'Government, Private, Community',  accent: 'selected-purple', color: '#8b5cf6' },
 ]
 
 export default function Login() {
   const { login } = useAuth()
-  const [email,      setEmail]      = useState('')
-  const [password,   setPassword]   = useState('')
-  const [showPass,   setShowPass]   = useState(false)
-  const [role,       setRole]       = useState('municipality_admin')
-  const [loading,    setLoading]    = useState(false)
+  const [email,    setEmail]    = useState('')
+  const [password, setPassword] = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [role,     setRole]     = useState('municipality_admin')
+  const [loading,  setLoading]  = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -42,8 +63,10 @@ export default function Login() {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-blue/10 border border-accent-blue/30 mb-4 animate-glow">
-            <span className="text-3xl">♻️</span>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-blue/10 border border-accent-blue/30 mb-4 animate-glow text-accent-blue">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
           </div>
           <h1 className="text-2xl font-black tracking-[0.25em] text-txt-primary glow-blue">SMART-WASTE</h1>
           <p className="text-xs font-semibold tracking-[0.2em] text-accent-blue mt-1">MUNICIPAL MANAGEMENT SYSTEM</p>
@@ -66,7 +89,7 @@ export default function Login() {
                   {isSelected && (
                     <span className="absolute top-2 right-2 text-xs" style={{ color: p.color }}>✓</span>
                   )}
-                  <div className="text-2xl mb-1">{p.icon}</div>
+                  <div className="mb-1 flex justify-center" style={{ color: p.color }}><p.Icon /></div>
                   <div className="text-xs font-bold text-txt-primary">{p.label}</div>
                   <div className="text-[10px] text-txt-secondary mt-0.5">{p.desc}</div>
                 </button>

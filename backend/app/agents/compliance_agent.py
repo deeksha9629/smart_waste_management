@@ -71,7 +71,7 @@ def run_compliance_agent():
                 "alert_type": "compliance_violation",
                 "severity": "high",
                 "title": f"Compliance violation – vehicle {event.get('vehicle_id')}",
-                "message": f"Failed checks: {', '.join(failed_checks)}. Penalty: ${penalty}",
+                "message": f"Failed checks: {', '.join(failed_checks)}. Penalty: ₹{penalty}",
                 "vehicle_id": event.get("vehicle_id"),
             })
     except Exception as e:

@@ -4,7 +4,11 @@ import { citizensAPI } from '../../services/api'
 import { useAuth } from '../../auth/AuthContext'
 import toast from 'react-hot-toast'
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const MEDALS = [
+  <svg className="w-7 h-7 text-accent-gold" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>,
+  <svg className="w-7 h-7 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>,
+  <svg className="w-7 h-7 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>,
+]
 
 export default function Leaderboard() {
   const { user } = useAuth()
@@ -53,7 +57,10 @@ export default function Leaderboard() {
               >
                 <div className="text-3xl mb-1">{MEDALS[rank - 1]}</div>
                 <div className="text-xs font-bold text-txt-primary truncate w-full px-2">{entry?.full_name || 'Anonymous'}</div>
-                <div className="text-accent-gold font-black text-sm">🪙 {(entry?.token_balance || 0).toLocaleString()}</div>
+                <div className="text-accent-gold font-black text-sm flex items-center gap-1 justify-center">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  {(entry?.token_balance || 0).toLocaleString()}
+                </div>
                 <div className="text-[10px] text-txt-secondary">#{rank}</div>
               </motion.div>
             )
@@ -99,10 +106,15 @@ export default function Leaderboard() {
                           </span>
                         </div>
                       </td>
-                      <td className="font-black text-accent-gold">🪙 {(entry.token_balance || 0).toLocaleString()}</td>
+                      <td className="font-black text-accent-gold">
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          {(entry.token_balance || 0).toLocaleString()}
+                        </span>
+                      </td>
                       <td className="text-accent-green">{(entry.total_earned || 0).toLocaleString()}</td>
                       <td>{entry.recycling_count || 0}</td>
-                      <td>{entry.streak_days ? `🔥 ${entry.streak_days}d` : '—'}</td>
+                      <td>{entry.streak_days ? <span className="flex items-center gap-1"><svg className="w-3.5 h-3.5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /></svg>{entry.streak_days}d</span> : '—'}</td>
                     </tr>
                   )
                 })}

@@ -63,7 +63,7 @@ export default function MapView() {
       // Toast only for critical threshold crossings
       const prev = binsRef.current.find((b) => b.bin_id === updated.bin_id)
       if (updated.fill_level >= 90 && (prev?.fill_level ?? 0) < 90) {
-        toast.error(`🚨 ${updated.bin_id} critical — ${updated.fill_level}% full`)
+        toast.error(`${updated.bin_id} critical — ${updated.fill_level}% full`)
       }
     })
     return unsub

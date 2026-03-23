@@ -1,11 +1,22 @@
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
+// Use Vite proxy in dev (/api → http://localhost:8000); in prod use env var
+const BASE = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: BASE,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
+
+// Deduplicate network-error toasts — show at most one every 5 s
+let _netErrTimer = null
+function _showNetError() {
+  if (_netErrTimer) return
+  toast.error('Network error — check your connection')
+  _netErrTimer = setTimeout(() => { _netErrTimer = null }, 5000)
+}
 
 // ── Request interceptor: attach JWT ──────────────────────────────────────────
 api.interceptors.request.use(
@@ -21,12 +32,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const url = error.config?.url || ''
     if (error.response?.status === 401) {
-      localStorage.removeItem('sw_token')
-      localStorage.removeItem('sw_user')
-      window.location.href = '/login'
+      if (!url.includes('/auth/me') && !url.includes('/auth/login')) {
+        localStorage.removeItem('sw_token')
+        localStorage.removeItem('sw_user')
+        window.location.href = '/login'
+      }
     } else if (!error.response) {
-      toast.error('Network error — check your connection')
+      // Suppress network errors during initial auth check
+      if (!url.includes('/auth/me')) {
+        _showNetError()
+      }
     }
     return Promise.reject(error)
   }

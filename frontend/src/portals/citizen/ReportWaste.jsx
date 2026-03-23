@@ -5,11 +5,11 @@ import { citizensAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 
 const REPORT_TYPES = [
-  { id: 'illegal_dumping',   icon: '🚫', label: 'Illegal Dumping',    desc: 'Waste dumped in unauthorized area' },
-  { id: 'bin_overflow',      icon: '⚠️', label: 'Bin Overflow',       desc: 'Bin is overflowing or full'       },
-  { id: 'damaged_bin',       icon: '🗑️', label: 'Damaged Bin',        desc: 'Bin is broken or vandalized'      },
-  { id: 'missed_collection', icon: '🚛', label: 'Missed Collection',  desc: 'Scheduled pickup was skipped'     },
-  { id: 'general_complaint', icon: '📝', label: 'General Complaint',  desc: 'Other waste-related issue'        },
+  { id: 'illegal_dumping',   icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>, label: 'Illegal Dumping',   desc: 'Waste dumped in unauthorized area' },
+  { id: 'bin_overflow',      icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>, label: 'Bin Overflow',      desc: 'Bin is overflowing or full' },
+  { id: 'damaged_bin',       icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>, label: 'Damaged Bin',       desc: 'Bin is broken or vandalized' },
+  { id: 'missed_collection', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2z" /></svg>, label: 'Missed Collection', desc: 'Scheduled pickup was skipped' },
+  { id: 'general_complaint', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>, label: 'General Complaint',  desc: 'Other waste-related issue' },
 ]
 
 const STATUS_BADGE = { pending: 'badge-gold', investigating: 'badge-blue', resolved: 'badge-green', rejected: 'badge-gray' }
@@ -121,7 +121,9 @@ export default function ReportWaste() {
               <div className="flex gap-2 mb-2">
                 <input type="text" className="input text-xs" placeholder="Latitude" value={form.location_lat} onChange={set('location_lat')} />
                 <input type="text" className="input text-xs" placeholder="Longitude" value={form.location_lng} onChange={set('location_lng')} />
-                <button type="button" onClick={getLocation} className="btn btn-ghost text-xs px-3 shrink-0">📍</button>
+                <button type="button" onClick={getLocation} className="btn btn-ghost text-xs px-3 shrink-0">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
               </div>
               <input type="text" className="input text-xs" placeholder="Address (optional)" value={form.address} onChange={set('address')} />
             </div>
@@ -142,9 +144,9 @@ export default function ReportWaste() {
               </select>
             </div>
 
-            <button type="submit" disabled={submitting} className="btn btn-success w-full">
-              {submitting ? <span className="spinner" /> : '📋'}
-              {submitting ? 'SUBMITTING...' : 'SUBMIT REPORT (+5 🪙)'}
+            <button type="submit" disabled={submitting} className="btn btn-success w-full flex items-center justify-center gap-2">
+              {submitting ? <span className="spinner" /> : <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>}
+              {submitting ? 'SUBMITTING...' : 'SUBMIT REPORT (+5 pts)'}
             </button>
           </form>
         </div>
@@ -170,8 +172,9 @@ export default function ReportWaste() {
                     <span className="font-mono text-xs text-accent-blue">{r.report_id}</span>
                     <span className={`badge ${STATUS_BADGE[r.status] || 'badge-gray'}`}>{r.status}</span>
                   </div>
-                  <div className="text-xs font-semibold text-txt-primary mb-1">
-                    {REPORT_TYPES.find((t) => t.id === r.report_type)?.icon} {r.report_type?.replace(/_/g, ' ')}
+                  <div className="text-xs font-semibold text-txt-primary mb-1 flex items-center gap-2">
+                    <span className="text-txt-secondary">{REPORT_TYPES.find((t) => t.id === r.report_type)?.icon}</span>
+                    {r.report_type?.replace(/_/g, ' ')}
                   </div>
                   <p className="text-[10px] text-txt-secondary line-clamp-2">{r.description}</p>
                   <div className="text-[10px] text-txt-secondary mt-1">

@@ -13,7 +13,7 @@ from app.auth.models import TokenData
 pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-MUNICIPALITY_ROLES = {"municipality_admin", "municipality_officer"}
+MUNICIPALITY_ROLES = {"municipality_admin", "municipality_officer", "government_agency", "private_company"}
 CITIZEN_ROLES = {"citizen", "community_group"}
 RECYCLING_ROLES = {"recycling_manager", "recycling_operator"}
 

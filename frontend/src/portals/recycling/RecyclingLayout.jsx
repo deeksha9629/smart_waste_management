@@ -14,12 +14,12 @@ export default function RecyclingLayout() {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isRecycling)     return <Navigate to="/login" replace />
+  if (!isRecycling)     return <Navigate to="/" replace />
 
   return (
-    <div className="min-h-screen grid-bg">
+    <div className="flex min-h-screen grid-bg">
       <RecyclingNavbar />
-      <main className="main-content">
+      <main className="main-content flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>

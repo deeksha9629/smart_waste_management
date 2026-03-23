@@ -14,7 +14,7 @@ export default function CitizenLayout() {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isCitizen)       return <Navigate to="/login" replace />
+  if (!isCitizen)       return <Navigate to="/" replace />
 
   return (
     <div className="min-h-screen grid-bg">

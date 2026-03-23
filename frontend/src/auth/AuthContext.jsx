@@ -24,13 +24,32 @@ export function AuthProvider({ children }) {
       if (!stored) { setIsLoading(false); return }
       try {
         const res = await authAPI.getMe()
-        setUser(res.data)
-        setToken(stored)
+        if (res.data) {
+          setUser(res.data)
+          setToken(stored)
+        } else {
+          throw new Error('No user data')
+        }
       } catch {
-        localStorage.removeItem('sw_token')
-        localStorage.removeItem('sw_user')
-        setToken(null)
-        setUser(null)
+        // Try to restore from localStorage as fallback
+        const cached = localStorage.getItem('sw_user')
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached)
+            setUser(parsed)
+            setToken(stored)
+          } catch {
+            localStorage.removeItem('sw_token')
+            localStorage.removeItem('sw_user')
+            setToken(null)
+            setUser(null)
+          }
+        } else {
+          localStorage.removeItem('sw_token')
+          localStorage.removeItem('sw_user')
+          setToken(null)
+          setUser(null)
+        }
       } finally {
         setIsLoading(false)
       }

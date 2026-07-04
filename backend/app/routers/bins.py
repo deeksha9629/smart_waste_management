@@ -66,14 +66,14 @@ def _create_bin_object(bin_id: str) -> dict:
     }
 
 
-# def _require_bin(bin_id: str) -> dict:
-#     """Get bin by ID or create a generic bin object for any input."""
-#     bin_ = db.get_bin_by_id(bin_id)
-#     if bin_:
-#         return bin_
+def _require_bin(bin_id: str) -> dict:
+    """Get bin by ID or create a generic bin object for any input."""
+    bin_ = db.get_bin_by_id(bin_id)
+    if bin_:
+        return bin_
     
-#     # Create a bin object for any bin_id (no error thrown)
-#     return _create_bin_object(bin_id)
+    # Create a bin object for any bin_id (no error thrown)
+    return _create_bin_object(bin_id)
 
 
 def _sha256(data: dict) -> str:
